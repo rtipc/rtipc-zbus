@@ -29,8 +29,7 @@ async fn listen_events(mut event: Consumer<MsgEvent>) {
     for _ in 0..1000 {
         sleep(Duration::from_millis(1)).await;
         loop {
-            match event.pop() {
-                PopResult::QueueError => panic!(),
+            match event.pop().unwrap() {
                 PopResult::NoMessage => {
                     break;
                 }
@@ -65,7 +64,7 @@ async fn exec_commands(
 
     for cmd in cmds {
         command.current_message().clone_from(cmd);
-        command.force_push();
+        command.force_push().unwrap();
 
         async_fd
             .await_event()
@@ -73,8 +72,7 @@ async fn exec_commands(
             .inspect_err(|e| println!("await_event error {e}"))
             .unwrap();
 
-        match response.pop() {
-            PopResult::QueueError => panic!(),
+        match response.pop().unwrap() {
             PopResult::NoMessage => {
                 continue;
             }
@@ -164,9 +162,9 @@ async fn main() -> Result<(), ZBusError> {
     let proxy = ServerProxy::new(&connection).await?;
     proxy.connect(request, fds).await?;
 
-    let command = grp.take_producer(0).unwrap();
-    let response = grp.take_consumer(0).unwrap();
-    let event = grp.take_consumer(1).unwrap();
+    let command = grp.acquire_producer(0).unwrap();
+    let response = grp.acquire_consumer(0).unwrap();
+    let event = grp.acquire_consumer(1).unwrap();
 
     let event_task = tokio::spawn(async move {
         listen_events(event).await;

@@ -27,9 +27,9 @@ fn print_group(grp: &ChannelGroup) {
 impl Server {
     pub fn new(mut grp: ChannelGroup) -> Self {
         print_group(&grp);
-        let command = grp.take_consumer(0).unwrap();
-        let response = grp.take_producer(0).unwrap();
-        let event = grp.take_producer(1).unwrap();
+        let command = grp.acquire_consumer(0).unwrap();
+        let response = grp.acquire_producer(0).unwrap();
+        let event = grp.acquire_producer(1).unwrap();
 
         Self {
             command,
@@ -43,8 +43,7 @@ impl Server {
     }
 
     fn process_cmd(&mut self) -> bool {
-        match self.command.pop() {
-            PopResult::QueueError => panic!(),
+        match self.command.pop().unwrap() {
             PopResult::NoMessage => return false,
             PopResult::NoNewMessage => return false,
             PopResult::Success => {}
@@ -70,7 +69,7 @@ impl Server {
                 err
             }
         };
-        self.response.force_push();
+        self.response.force_push().unwrap();
         run
     }
     fn send_events(&mut self, id: u32, num: u32, force: bool) -> i32 {
@@ -79,8 +78,8 @@ impl Server {
             event.id = id;
             event.nr = i;
             if force {
-                self.event.force_push();
-            } else if self.event.try_push() == TryPushResult::QueueFull {
+                self.event.force_push().unwrap();
+            } else if self.event.try_push().unwrap() == TryPushResult::QueueFull {
                 return i as i32;
             }
         }
