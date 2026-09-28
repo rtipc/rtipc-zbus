@@ -10,7 +10,7 @@ use tokio::io::unix::AsyncFd;
 
 use zbus::fdo::Error as ZBusError;
 
-use rtipc::{ChannelAttr, EventFd, GroupAttr};
+use rtipc::{ChannelAttributes, EventFd, GroupAttributes};
 
 pub struct AsyncEventFd {
     fd: AsyncFd<EventFd>,
@@ -48,7 +48,7 @@ pub struct ChannelAttrBus {
 }
 
 impl ChannelAttrBus {
-    fn from_rtipc_attr(attr: &ChannelAttr) -> Self {
+    fn from_rtipc_attr(attr: &ChannelAttributes) -> Self {
         Self {
             additonal_messages: attr.additional_messages as u32,
             message_size: attr.message_size.get() as u32,
@@ -57,11 +57,11 @@ impl ChannelAttrBus {
         }
     }
 
-    fn into_rtipc_attr(self) -> Result<ChannelAttr, ZBusError> {
+    fn into_rtipc_attr(self) -> Result<ChannelAttributes, ZBusError> {
         let message_size = NonZeroUsize::new(self.message_size as usize).ok_or(
             ZBusError::InvalidArgs(String::from("message_size can't be zero")),
         )?;
-        Ok(ChannelAttr {
+        Ok(ChannelAttributes {
             additional_messages: self.additonal_messages as usize,
             message_size,
 
@@ -71,8 +71,8 @@ impl ChannelAttrBus {
     }
 }
 
-fn zbus_into_rtipc_attr(channels_bus: Vec<ChannelAttrBus>) -> Result<Vec<ChannelAttr>, ZBusError> {
-    let channels: Result<Vec<ChannelAttr>, ZBusError> = channels_bus
+fn zbus_into_rtipc_attr(channels_bus: Vec<ChannelAttrBus>) -> Result<Vec<ChannelAttributes>, ZBusError> {
+    let channels: Result<Vec<ChannelAttributes>, ZBusError> = channels_bus
         .into_iter()
         .map(|c| c.into_rtipc_attr())
         .collect();
@@ -83,18 +83,18 @@ pub fn zbus_into_rtipc_group_attr(
     consumers_zbus: Vec<ChannelAttrBus>,
     producers_zbus: Vec<ChannelAttrBus>,
     info: Vec<u8>,
-) -> Result<GroupAttr, ZBusError> {
+) -> Result<GroupAttributes, ZBusError> {
     let consumers = zbus_into_rtipc_attr(consumers_zbus)?;
     let producers = zbus_into_rtipc_attr(producers_zbus)?;
 
-    Ok(GroupAttr {
+    Ok(GroupAttributes {
         consumers,
         producers,
         info,
     })
 }
 
-pub fn rtipc_into_zbus_attr(attrs: &[ChannelAttr]) -> Vec<ChannelAttrBus> {
+pub fn rtipc_into_zbus_attr(attrs: &[ChannelAttributes]) -> Vec<ChannelAttrBus> {
     attrs.iter().map(ChannelAttrBus::from_rtipc_attr).collect()
 }
 

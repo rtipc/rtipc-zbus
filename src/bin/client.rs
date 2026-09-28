@@ -4,7 +4,7 @@ use tokio::time::{Duration, sleep};
 
 use zbus::{Connection, fdo::Error as ZBusError, proxy};
 
-use rtipc::{ChannelAttr, ChannelGroup, Consumer, GroupAttr, PopResult, Producer};
+use rtipc::{ChannelAttributes, ChannelGroup, Consumer, GroupAttributes, PopResult, Producer};
 
 use rtipc_zbus::{AsyncEventFd, CommandId, MsgCommand, MsgEvent, MsgResponse};
 
@@ -120,21 +120,21 @@ async fn main() -> Result<(), ZBusError> {
         },
     ];
 
-    let c2s_channels: [ChannelAttr; 1] = [ChannelAttr {
+    let c2s_channels: [ChannelAttributes; 1] = [ChannelAttributes {
         additional_messages: 0,
         message_size: unsafe { NonZeroUsize::new_unchecked(size_of::<MsgCommand>()) },
         eventfd: true,
         info: b"rpc command".to_vec(),
     }];
 
-    let s2c_channels: [ChannelAttr; 2] = [
-        ChannelAttr {
+    let s2c_channels: [ChannelAttributes; 2] = [
+        ChannelAttributes {
             additional_messages: 0,
             message_size: unsafe { NonZeroUsize::new_unchecked(size_of::<MsgResponse>()) },
             eventfd: true,
             info: b"rpc response".to_vec(),
         },
-        ChannelAttr {
+        ChannelAttributes {
             additional_messages: 10,
             message_size: unsafe { NonZeroUsize::new_unchecked(size_of::<MsgEvent>()) },
             eventfd: false,
@@ -142,7 +142,7 @@ async fn main() -> Result<(), ZBusError> {
         },
     ];
 
-    let attr = GroupAttr {
+    let attr = GroupAttributes {
         producers: c2s_channels.to_vec(),
         consumers: s2c_channels.to_vec(),
         info: b"rpc example".to_vec(),
